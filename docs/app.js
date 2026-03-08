@@ -18,6 +18,9 @@ const ALERT_TYPES = {
   UAV: 2
 };
 
+const IS_GITHUB_PAGES_HOST = /\.github\.io$/i.test(window.location.hostname);
+const BUNDLED_PLACE_DIRECTORY_URL = './location-directory.json';
+
 const RSS_NEWS_SOURCES = [
   {
     id: 'google-news-alerts',
@@ -46,14 +49,6 @@ const PROXY_FETCH_CHAIN = [
     name: 'allorigins-raw',
     buildUrl: (target) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
     parse: async (response) => response.text()
-  },
-  {
-    name: 'allorigins-get',
-    buildUrl: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
-    parse: async (response) => {
-      const payload = await response.json();
-      return typeof payload?.contents === 'string' ? payload.contents : '';
-    }
   },
   {
     name: 'corsproxy-io',
@@ -434,10 +429,13 @@ document.addEventListener('keydown', (event) => {
 
 async function bootstrap() {
   loadPersistedState();
+  await hydrateBundledPlaceDirectory();
   recalculateDerivedData();
   renderAll({ fitToData: true });
 
-  await seedLocationDirectory({ force: true });
+  if (!IS_GITHUB_PAGES_HOST) {
+    await seedLocationDirectory({ force: true });
+  }
   await refreshAlerts({ backfill: state.alerts.length === 0, fitToData: true, announce: false });
   await refreshIntel({ force: true });
 
@@ -449,14 +447,51 @@ async function bootstrap() {
     void refreshIntel({ force: false });
   }, INTEL_REFRESH_MS);
 
-  setInterval(() => {
-    void seedLocationDirectory({ force: false });
-  }, LOCATION_DIRECTORY_REFRESH_MS);
+  if (!IS_GITHUB_PAGES_HOST) {
+    setInterval(() => {
+      void seedLocationDirectory({ force: false });
+    }, LOCATION_DIRECTORY_REFRESH_MS);
+  }
 
   setInterval(() => {
     pruneOldAlerts();
     persistAlerts();
   }, 60_000);
+}
+
+async function hydrateBundledPlaceDirectory() {
+  try {
+    const response = await fetch(BUNDLED_PLACE_DIRECTORY_URL, { cache: 'force-cache' });
+    if (!response.ok) return;
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    let merged = 0;
+    for (const row of rows) {
+      const key = normalizePlaceName(row?.key || row?.label || '');
+      const lat = Number(row?.lat);
+      const lon = Number(row?.lon);
+      if (!key || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+      if (!state.placeDirectory.has(key)) {
+        merged += 1;
+      }
+      state.placeDirectory.set(key, {
+        key,
+        label: cleanPlaceLabel(row?.label || row?.key || ''),
+        lat,
+        lon,
+        source: row?.source || 'bundle',
+        updatedAt: row?.updatedAt || null
+      });
+    }
+
+    if (merged > 0) {
+      persistLocationDirectory();
+    }
+  } catch (error) {
+    console.warn('bundled place directory load failed', error);
+  }
 }
 
 function loadPersistedState() {
@@ -549,7 +584,7 @@ async function refreshAlerts({ backfill = false, fitToData = false, announce = t
     const sortedStatuses = [...fetchedStatuses].sort((a, b) => compareIds(a.id, b.id));
     const incomingAlerts = await statusesToAlerts(sortedStatuses, {
       allowGeocode: !backfill,
-      allowLiveLookup: !backfill
+      allowLiveLookup: !backfill && !IS_GITHUB_PAGES_HOST
     });
 
     const newlyAdded = ingestAlerts(incomingAlerts, { fitToData });
@@ -709,6 +744,7 @@ function cleanPlaceLabel(name) {
 }
 
 async function seedLocationDirectory({ force = false } = {}) {
+  if (IS_GITHUB_PAGES_HOST) return;
   const last = state.locationDirectoryUpdatedAt ? Date.parse(state.locationDirectoryUpdatedAt) : 0;
   const isFresh = Number.isFinite(last) && Date.now() - last < LOCATION_DIRECTORY_REFRESH_MS;
   if (!force && isFresh) return;
@@ -740,6 +776,7 @@ async function seedLocationDirectory({ force = false } = {}) {
 }
 
 async function fetchLocationRows(alertTypeId, fromDate, toDate) {
+  if (IS_GITHUB_PAGES_HOST) return [];
   const url = new URL(`${LOOKUP_API_BASE}/alerts/details`);
   url.searchParams.set('from', toApiDateTime(fromDate));
   url.searchParams.set('to', toApiDateTime(toDate));
