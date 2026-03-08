@@ -447,12 +447,17 @@ h1 {
 .image-feed {
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  grid-auto-rows: minmax(102px, auto);
-  gap: 6px;
-  overflow: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 118px;
+  gap: 7px;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 1px;
   align-content: start;
+}
+
+.image-feed > * {
+  min-width: 0;
 }
 
 .image-card {
@@ -460,8 +465,9 @@ h1 {
   display: block;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 92px;
-  aspect-ratio: 16 / 9;
+  min-height: 0;
+  height: 100%;
+  isolation: isolate;
   border: 1px solid rgba(99, 191, 239, 0.3);
   background: linear-gradient(160deg, rgba(15, 36, 52, 0.84), rgba(7, 21, 33, 0.76));
   transition: border-color 0.16s ease, transform 0.16s ease, filter 0.16s ease;
@@ -501,17 +507,19 @@ h1 {
   padding: 6px;
   display: grid;
   gap: 2px;
+  max-height: 68%;
+  overflow: hidden;
 }
 
 .image-overlay strong {
-  display: block;
   color: #e6f5ff;
   font-size: 0.68rem;
   line-height: 1.1;
-  white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1091,6 +1099,7 @@ body.drawer-news-open .news-drawer {
 
   .image-feed {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 108px;
   }
 
   #map {

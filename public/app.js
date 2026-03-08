@@ -1690,10 +1690,13 @@ function zoomToAlert(alert) {
 
   if (coords.length === 0) return;
 
-  setMapVisualMode('detail');
+  setMapVisualMode('detail', { force: true });
+  map.once('moveend', () => {
+    setMapVisualMode('detail', { force: true });
+  });
 
   if (coords.length === 1) {
-    const targetZoom = Math.min(16.9, Math.max(map.getZoom() + 1.8, 13.1));
+    const targetZoom = Math.min(16.9, Math.max(map.getZoom() + 1.8, 13.6));
     map.easeTo({
       center: coords[0],
       zoom: targetZoom,
@@ -1712,8 +1715,16 @@ function zoomToAlert(alert) {
   });
   if (!camera) return;
 
+  const averageCenter = [
+    coords.reduce((sum, point) => sum + point[0], 0) / coords.length,
+    coords.reduce((sum, point) => sum + point[1], 0) / coords.length
+  ];
+  const targetCenter = camera.center || averageCenter;
+  const targetZoom = Math.min(16.2, Math.max(12.4, Number(camera.zoom || 0)));
+
   map.easeTo({
-    ...camera,
+    center: targetCenter,
+    zoom: targetZoom,
     pitch: ALERT_FOCUS_PITCH - 6,
     bearing: ALERT_FOCUS_BEARING,
     duration: 1500,
