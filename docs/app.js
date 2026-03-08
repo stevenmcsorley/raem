@@ -41,6 +41,32 @@ const RSS_NEWS_SOURCES = [
   }
 ];
 
+const PROXY_FETCH_CHAIN = [
+  {
+    name: 'allorigins-raw',
+    buildUrl: (target) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    parse: async (response) => response.text()
+  },
+  {
+    name: 'allorigins-get',
+    buildUrl: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
+    parse: async (response) => {
+      const payload = await response.json();
+      return typeof payload?.contents === 'string' ? payload.contents : '';
+    }
+  },
+  {
+    name: 'corsproxy-io',
+    buildUrl: (target) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    parse: async (response) => response.text()
+  },
+  {
+    name: 'codetabs',
+    buildUrl: (target) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+    parse: async (response) => response.text()
+  }
+];
+
 const STORAGE_KEYS = {
   alerts: 'raem.alerts.v2',
   runtime: 'raem.runtime.v2',
@@ -1083,23 +1109,64 @@ function buildFallbackImagesFromNews(newsItems) {
 }
 
 async function fetchTextWithProxyFallback(url, timeoutMs = 10_000) {
-  try {
-    const direct = await fetchWithTimeout(url, timeoutMs, { cache: 'no-store' });
-    if (!direct.ok) throw new Error(`status ${direct.status}`);
-    return await direct.text();
-  } catch {
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(String(url))}`;
-    const proxied = await fetchWithTimeout(proxy, timeoutMs, { cache: 'no-store' });
-    if (!proxied.ok) {
-      throw new Error(`proxy status ${proxied.status}`);
-    }
-    return proxied.text();
+  const target = String(url);
+  const attempts = [];
+
+  if (shouldAttemptDirectFetch(target)) {
+    attempts.push({
+      name: 'direct',
+      url: target,
+      parse: async (response) => response.text()
+    });
   }
+
+  for (const proxy of PROXY_FETCH_CHAIN) {
+    attempts.push({
+      name: proxy.name,
+      url: proxy.buildUrl(target),
+      parse: proxy.parse
+    });
+  }
+
+  const errors = [];
+  for (const attempt of attempts) {
+    try {
+      const response = await fetchWithTimeout(attempt.url, timeoutMs, { cache: 'no-store' });
+      if (!response.ok) {
+        errors.push(`${attempt.name}: status ${response.status}`);
+        continue;
+      }
+
+      const body = await attempt.parse(response);
+      if (typeof body === 'string' && body.trim()) {
+        return body;
+      }
+      errors.push(`${attempt.name}: empty body`);
+    } catch (error) {
+      errors.push(`${attempt.name}: ${error?.message || 'request failed'}`);
+    }
+  }
+
+  throw new Error(`All fetch attempts failed for ${target} (${errors.join(' | ')})`);
 }
 
 async function fetchJsonWithProxyFallback(url, timeoutMs = 10_000) {
   const raw = await fetchTextWithProxyFallback(url, timeoutMs);
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`json parse failed: ${error?.message || 'invalid JSON'}`);
+  }
+}
+
+function shouldAttemptDirectFetch(url) {
+  try {
+    const parsed = new URL(String(url), window.location.href);
+    if (parsed.origin === window.location.origin) return true;
+    return !/\.github\.io$/i.test(window.location.hostname);
+  } catch {
+    return false;
+  }
 }
 
 async function fetchWithTimeout(url, timeoutMs, options = {}) {
