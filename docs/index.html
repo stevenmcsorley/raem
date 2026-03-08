@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RocketAlert Earth Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="background-orbit"></div>
+    <div class="scanlines"></div>
+    <aside
+      id="live-alert-stack"
+      class="live-alert-stack"
+      aria-live="polite"
+      aria-label="Live alerts"
+    ></aside>
+    <div class="edge-tabs">
+      <button id="open-insights-tab" class="edge-tab" type="button" aria-label="Open insights">
+        INSIGHTS
+      </button>
+      <button id="open-news-tab" class="edge-tab" type="button" aria-label="Open news drawer">
+        NEWS
+        <span id="news-badge" class="news-badge" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+    <aside id="insights-drawer" class="insights-drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h2>Insights</h2>
+        <button id="close-insights" class="panel-btn" type="button">Close</button>
+      </div>
+      <section class="drawer-block">
+        <h3>Prediction</h3>
+        <div id="prediction" class="prediction"></div>
+      </section>
+      <section class="drawer-block">
+        <h3>Hotspots</h3>
+        <ul id="hotspot-list" class="simple-list"></ul>
+      </section>
+    </aside>
+    <aside id="news-drawer" class="news-drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h2>News Pulse</h2>
+        <button id="close-news" class="panel-btn" type="button">Close</button>
+      </div>
+      <section class="drawer-block">
+        <ul id="news-feed" class="news-feed"></ul>
+      </section>
+    </aside>
+
+    <main class="layout">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Live Situation Dashboard</p>
+          <h1>RocketAlert Earth Monitor</h1>
+        </div>
+
+        <div class="hero-actions">
+          <button id="audio-toggle" class="btn">Enable Audio Alerts</button>
+          <div id="live-pill" class="pill">Syncing…</div>
+        </div>
+      </header>
+
+      <section class="kpis" id="kpis"></section>
+
+      <section class="workspace">
+        <article class="panel map-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Global Alert Map</h2>
+              <p>Live pulses auto-focus on impact area. 24h density stays visible.</p>
+            </div>
+            <button id="reset-view" class="panel-btn" type="button">Reset View</button>
+          </div>
+          <div id="map"></div>
+        </article>
+
+        <aside class="right-rail">
+          <article class="panel alerts-panel">
+            <div class="panel-head">
+              <h2>Recent Alerts</h2>
+              <p>Newest first, live stream.</p>
+            </div>
+            <ul id="alert-list" class="alert-list"></ul>
+          </article>
+
+          <article class="panel intel-panel">
+            <div class="panel-head">
+              <h2>Intel Links</h2>
+            </div>
+            <section class="mini-block visual-block">
+              <div id="image-feed" class="image-feed"></div>
+              <div id="intel-ribbon" class="intel-ribbon"></div>
+            </section>
+          </article>
+        </aside>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -2,11 +2,11 @@
   "name": "rocket-alert-earth-monitor",
   "version": "0.1.0",
   "description": "Static RocketAlert monitor with localStorage history and live browser polling",
-  "main": "public/app.js",
+  "main": "docs/app.js",
   "type": "module",
   "scripts": {
-    "start": "npx serve public -l 3000",
-    "dev": "npx serve public -l 3000"
+    "start": "npx serve docs -l 3000",
+    "dev": "npx serve docs -l 3000"
   },
   "engines": {
     "node": ">=20"

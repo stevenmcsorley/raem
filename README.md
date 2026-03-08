@@ -28,11 +28,13 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
-## GitHub Pages hosting
+## GitHub Pages hosting (classic)
 
 1. Push this repo to GitHub.
-2. In GitHub Pages settings, publish a static site from this repository.
-3. Serve the `public/` files (for example via Pages workflow artifact or by moving/copying `public/*` into your Pages publish folder).
+2. Open **Settings → Pages**.
+3. Set **Source** to **Deploy from a branch**.
+4. Set **Branch** to `main` and **Folder** to `/docs`.
+5. Save. GitHub will publish the site from the `docs/` folder.
 
 ## Data sources
 
